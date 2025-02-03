@@ -12,21 +12,25 @@ export class CssWatcher {
 	private watcher: FSWatcher | null = null;
 	private patterns: string[];
 	private ignorePatterns: string[];
+	private enableWatch: boolean;
 
 	constructor(
 		patterns: string[] = ['**/*.css'],
 		ignore: string[] = ['**/node_modules/**', '**/dist/**', '**/out/**', '**/build/**'],
+		enableWatch = true,
 	) {
 		this.patterns = patterns;
 		// Ignore hidden files by default
 		this.ignorePatterns = ['**/.*', ...ignore];
+		this.enableWatch = enableWatch;
 
 		const cwd = process.cwd();
-		this.setupWatcher(cwd);
+		this.maybeSetupWatcher(cwd);
 		this.initialScan(cwd);
 	}
 
-	private setupWatcher(cwd: string) {
+	private maybeSetupWatcher(cwd: string) {
+		if (!this.enableWatch) return;
 		this.watcher = chokidar.watch(cwd, {
 			persistent: true,
 			ignoreInitial: true, // We need to do our initial scan synchronously

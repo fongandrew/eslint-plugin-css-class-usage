@@ -58,6 +58,14 @@ The plugin supports the following configuration options:
 
     // Glob patterns for files to ignore (default: ['**/node_modules/**', '**/dist/**', '**/out/**', '**/build/**'])
     ignore: ['**/node_modules/**', '**/dist/**', '**/out/**', '**/build/**']
+
+    // Whether to enable the file watcher for changes to CSS files. This is
+    // useful when used as part of an editor plugin but can cause CI jobs
+    // to hang. By default, the watcher is enabled only if the running script
+    // has `serve` or `watch` in its name (the VSCode ESLint extension is
+    // named `eslintServer`). This behavior can be overridden by running
+    // your own check and setting this option to true or false accordingly.
+    watch: 'auto'
   }]
 }
 ```

@@ -7,6 +7,7 @@ const DEFAULT_OPTIONS = {
     classFunctions: ['clsx', 'classNames', 'cx'],
     cssFiles: ['**/*.css'],
     ignore: ['**/node_modules/**', '**/dist/**', '**/out/**', '**/build/**'],
+    watch: 'auto',
 };
 const rule = {
     // Not sure why we need to do this since it doesn't show up on context.options anyways,
@@ -52,7 +53,15 @@ const rule = {
         };
         // Initialize watcher if not already done
         if (!cssWatcher) {
-            cssWatcher = new file_watcher_1.CssWatcher(options.cssFiles, options.ignore);
+            const shouldWatch = (() => {
+                var _a, _b;
+                if (options.watch === 'auto') {
+                    const script = (_b = (_a = process.argv[1]) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== null && _b !== void 0 ? _b : '';
+                    return script.includes('watch') || script.includes('serve');
+                }
+                return options.watch;
+            })();
+            cssWatcher = new file_watcher_1.CssWatcher(options.cssFiles, options.ignore, shouldWatch);
         }
         /** Helper to check if a class exists in our CSS files */
         const validate = (className, node) => {

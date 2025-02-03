@@ -11,6 +11,11 @@ export interface PluginOptions {
 	cssFiles?: string[];
 	/** Patterns to ignore when searching for CSS files */
 	ignore?: string[];
+	/**
+	 * Enable watcher? Defaults to "auto", which only runs if the script namae has "watch"
+	 * or "serve" in it (VSCode's extension is named eslintServer).
+	 */
+	watch?: boolean | 'auto';
 }
 
 let cssWatcher: CssWatcher | null = null;
@@ -20,6 +25,7 @@ const DEFAULT_OPTIONS: PluginOptions = {
 	classFunctions: ['clsx', 'classNames', 'cx'],
 	cssFiles: ['**/*.css'],
 	ignore: ['**/node_modules/**', '**/dist/**', '**/out/**', '**/build/**'],
+	watch: 'auto',
 };
 
 const rule: RuleModule<'unknownClass', [PluginOptions]> = {
@@ -68,7 +74,14 @@ const rule: RuleModule<'unknownClass', [PluginOptions]> = {
 
 		// Initialize watcher if not already done
 		if (!cssWatcher) {
-			cssWatcher = new CssWatcher(options.cssFiles, options.ignore);
+			const shouldWatch = (() => {
+				if (options.watch === 'auto') {
+					const script = process.argv[1]?.toLowerCase() ?? '';
+					return script.includes('watch') || script.includes('serve');
+				}
+				return options.watch;
+			})();
+			cssWatcher = new CssWatcher(options.cssFiles, options.ignore, shouldWatch);
 		}
 
 		/** Helper to check if a class exists in our CSS files */

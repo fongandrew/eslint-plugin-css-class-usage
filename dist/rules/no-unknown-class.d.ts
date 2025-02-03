@@ -8,6 +8,11 @@ export interface PluginOptions {
     cssFiles?: string[];
     /** Patterns to ignore when searching for CSS files */
     ignore?: string[];
+    /**
+     * Enable watcher? Defaults to "auto", which only runs if the script namae has "watch"
+     * or "serve" in it (VSCode's extension is named eslintServer).
+     */
+    watch?: boolean | 'auto';
 }
 declare const rule: RuleModule<'unknownClass', [PluginOptions]>;
 export default rule;

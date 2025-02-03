@@ -9,7 +9,7 @@ const chokidar_1 = __importDefault(require("chokidar"));
 const css_extractor_1 = require("./css-extractor");
 const micromatch_1 = __importDefault(require("micromatch"));
 class CssWatcher {
-    constructor(patterns = ['**/*.css'], ignore = ['**/node_modules/**', '**/dist/**', '**/out/**', '**/build/**']) {
+    constructor(patterns = ['**/*.css'], ignore = ['**/node_modules/**', '**/dist/**', '**/out/**', '**/build/**'], enableWatch = true) {
         this.state = {
             fileClasses: new Map(),
             lastUpdate: 0,
@@ -18,11 +18,14 @@ class CssWatcher {
         this.patterns = patterns;
         // Ignore hidden files by default
         this.ignorePatterns = ['**/.*', ...ignore];
+        this.enableWatch = enableWatch;
         const cwd = process.cwd();
-        this.setupWatcher(cwd);
+        this.maybeSetupWatcher(cwd);
         this.initialScan(cwd);
     }
-    setupWatcher(cwd) {
+    maybeSetupWatcher(cwd) {
+        if (!this.enableWatch)
+            return;
         this.watcher = chokidar_1.default.watch(cwd, {
             persistent: true,
             ignoreInitial: true, // We need to do our initial scan synchronously

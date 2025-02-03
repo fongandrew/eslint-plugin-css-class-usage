@@ -3,8 +3,9 @@ export declare class CssWatcher {
     private watcher;
     private patterns;
     private ignorePatterns;
-    constructor(patterns?: string[], ignore?: string[]);
-    private setupWatcher;
+    private enableWatch;
+    constructor(patterns?: string[], ignore?: string[], enableWatch?: boolean);
+    private maybeSetupWatcher;
     private updateClassesForFile;
     private initialScan;
     hasClass(className: string): boolean;
