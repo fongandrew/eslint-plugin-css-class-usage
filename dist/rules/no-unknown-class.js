@@ -1,0 +1,125 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const file_watcher_1 = require("../utils/file-watcher");
+let cssWatcher = null;
+const rule = {
+    defaultOptions: [
+        {
+            classAttributes: ['className', 'class', 'classList'],
+            classFunctions: ['clsx', 'classNames', 'cx'],
+            cssFiles: ['**/*.css'],
+            ignore: ['**/node_modules/**', '**/dist/**', '**/out/**', '**/build/**'],
+        },
+    ],
+    meta: {
+        type: 'problem',
+        docs: {
+            description: 'Ensure that CSS classes used in JS/TS files exist',
+            recommended: 'recommended',
+        },
+        messages: {
+            unknownClass: "Unknown CSS class '{{className}}'",
+        },
+        schema: [
+            {
+                type: 'object',
+                properties: {
+                    classAttributes: {
+                        type: 'array',
+                        items: { type: 'string' },
+                    },
+                    classFunctions: {
+                        type: 'array',
+                        items: { type: 'string' },
+                    },
+                    cssFiles: {
+                        type: 'array',
+                        items: { type: 'string' },
+                    },
+                    ignore: {
+                        type: 'array',
+                        items: { type: 'string' },
+                    },
+                },
+                additionalProperties: false,
+            },
+        ],
+    },
+    create(context) {
+        const options = context.options[0];
+        // Initialize watcher if not already done
+        if (!cssWatcher) {
+            cssWatcher = new file_watcher_1.CssWatcher(options.cssFiles, options.ignore);
+        }
+        /** Helper to check if a class exists in our CSS files */
+        const validate = (className, node) => {
+            // Ignore Tailwind classes with arbitrary values
+            if (className.includes('[')) {
+                return;
+            }
+            // Remove any Tailwind modifiers
+            const baseClass = className.split(':').pop();
+            if (!(cssWatcher === null || cssWatcher === void 0 ? void 0 : cssWatcher.hasClass(baseClass))) {
+                context.report({
+                    node,
+                    messageId: 'unknownClass',
+                    data: { className: baseClass },
+                });
+            }
+        };
+        /** Helper to validate class names in object expressions */
+        const validateObjectExpression = (objExpr) => {
+            objExpr.properties.forEach((prop) => {
+                if (prop.type === 'Property') {
+                    if (prop.key.type === 'Literal' && typeof prop.key.value === 'string') {
+                        validate(prop.key.value, prop);
+                    }
+                    else if (prop.key.type === 'Identifier') {
+                        validate(prop.key.name, prop);
+                    }
+                }
+                // We ignore SpreadElement as it can't contain class names directly
+            });
+        };
+        return {
+            // Check JSX className attributes
+            JSXAttribute(node) {
+                var _a, _b, _c;
+                if (node.name.type === 'JSXIdentifier' &&
+                    ((_a = options.classAttributes) === null || _a === void 0 ? void 0 : _a.includes(node.name.name))) {
+                    if (((_b = node.value) === null || _b === void 0 ? void 0 : _b.type) === 'Literal' && typeof node.value.value === 'string') {
+                        const classNames = node.value.value.split(/\s+/);
+                        classNames.forEach((className) => {
+                            validate(className, node);
+                        });
+                    }
+                    else if (((_c = node.value) === null || _c === void 0 ? void 0 : _c.type) === 'JSXExpressionContainer') {
+                        const expr = node.value.expression;
+                        if (expr.type === 'ObjectExpression') {
+                            validateObjectExpression(expr);
+                        }
+                    }
+                }
+            },
+            // Check class utility function calls
+            CallExpression(node) {
+                var _a;
+                if (node.callee.type === 'Identifier' &&
+                    ((_a = options.classFunctions) === null || _a === void 0 ? void 0 : _a.includes(node.callee.name))) {
+                    node.arguments.forEach((arg) => {
+                        if (arg.type === 'Literal' && typeof arg.value === 'string') {
+                            const classNames = arg.value.split(/\s+/);
+                            classNames.forEach((className) => {
+                                validate(className, arg);
+                            });
+                        }
+                        else if (arg.type === 'ObjectExpression') {
+                            validateObjectExpression(arg);
+                        }
+                    });
+                }
+            },
+        };
+    },
+};
+exports.default = rule;
