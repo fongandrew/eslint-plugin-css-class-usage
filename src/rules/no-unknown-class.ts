@@ -1,18 +1,21 @@
-import { type Rule } from 'eslint';
-import type * as JSXTree from 'estree-jsx';
+import { type RuleModule, type RuleContext } from '@typescript-eslint/utils/ts-eslint';
+import { type TSESTree } from '@typescript-eslint/types';
 import { type PluginOptions } from '../types';
 import { CssWatcher } from '../utils/file-watcher';
 import { DEFAULT_OPTIONS } from '../defaults';
 
 let cssWatcher: CssWatcher | null = null;
 
-const rule: Rule.RuleModule = {
+const rule: RuleModule<'unknownClass', [typeof DEFAULT_OPTIONS]> = {
+	defaultOptions: [DEFAULT_OPTIONS],
 	meta: {
 		type: 'problem',
 		docs: {
 			description: 'Ensure that CSS classes used in JS/TS files exist',
-			category: 'Possible Errors',
-			recommended: true,
+			recommended: 'recommended',
+		},
+		messages: {
+			unknownClass: "Unknown CSS class '{{className}}'",
 		},
 		schema: [
 			{
@@ -36,7 +39,7 @@ const rule: Rule.RuleModule = {
 		],
 	},
 
-	create(context: Rule.RuleContext) {
+	create(context: Readonly<RuleContext<'unknownClass', [typeof DEFAULT_OPTIONS]>>) {
 		const options: PluginOptions = {
 			...DEFAULT_OPTIONS,
 			...(context.options[0] || {}),
@@ -48,7 +51,7 @@ const rule: Rule.RuleModule = {
 		}
 
 		/** Helper to check if a class exists in our CSS files */
-		const validate = (className: string, node: JSXTree.Node) => {
+		const validate = (className: string, node: TSESTree.Node) => {
 			// Ignore Tailwind classes with arbitrary values
 			if (className.includes('[')) {
 				return;
@@ -58,14 +61,15 @@ const rule: Rule.RuleModule = {
 			if (!cssWatcher?.hasClass(baseClass)) {
 				context.report({
 					node,
-					message: `Unknown CSS class '${className}'`,
+					messageId: 'unknownClass',
+					data: { className: baseClass },
 				});
 			}
 		};
 
 		/** Helper to validate class names in object expressions */
-		const validateObjectExpression = (objExpr: JSXTree.ObjectExpression) => {
-			objExpr.properties.forEach((prop) => {
+		const validateObjectExpression = (objExpr: TSESTree.ObjectExpression) => {
+			objExpr.properties.forEach((prop: TSESTree.Property | TSESTree.SpreadElement) => {
 				if (prop.type === 'Property') {
 					if (prop.key.type === 'Literal' && typeof prop.key.value === 'string') {
 						validate(prop.key.value, prop);
@@ -73,27 +77,24 @@ const rule: Rule.RuleModule = {
 						validate(prop.key.name, prop);
 					}
 				}
+				// We ignore SpreadElement as it can't contain class names directly
 			});
 		};
 
 		return {
 			// Check JSX className attributes
-			JSXAttribute(node: JSXTree.Node) {
-				const jsxNode = node as JSXTree.JSXAttribute;
+			JSXAttribute(node: TSESTree.JSXAttribute) {
 				if (
-					jsxNode.name.type === 'JSXIdentifier' &&
-					options.classAttributes?.includes(jsxNode.name.name)
+					node.name.type === 'JSXIdentifier' &&
+					options.classAttributes?.includes(node.name.name)
 				) {
-					if (
-						jsxNode.value?.type === 'Literal' &&
-						typeof jsxNode.value.value === 'string'
-					) {
-						const classNames = jsxNode.value.value.split(/\s+/);
+					if (node.value?.type === 'Literal' && typeof node.value.value === 'string') {
+						const classNames = node.value.value.split(/\s+/);
 						classNames.forEach((className: string) => {
-							validate(className, jsxNode);
+							validate(className, node);
 						});
-					} else if (jsxNode.value?.type === 'JSXExpressionContainer') {
-						const expr = jsxNode.value.expression;
+					} else if (node.value?.type === 'JSXExpressionContainer') {
+						const expr = node.value.expression;
 						if (expr.type === 'ObjectExpression') {
 							validateObjectExpression(expr);
 						}
@@ -102,13 +103,12 @@ const rule: Rule.RuleModule = {
 			},
 
 			// Check class utility function calls
-			CallExpression(node: JSXTree.Node) {
-				const callNode = node as JSXTree.CallExpression;
+			CallExpression(node: TSESTree.CallExpression) {
 				if (
-					callNode.callee.type === 'Identifier' &&
-					options.classFunctions?.includes(callNode.callee.name)
+					node.callee.type === 'Identifier' &&
+					options.classFunctions?.includes(node.callee.name)
 				) {
-					callNode.arguments.forEach((arg) => {
+					node.arguments.forEach((arg: TSESTree.Node) => {
 						if (arg.type === 'Literal' && typeof arg.value === 'string') {
 							const classNames = arg.value.split(/\s+/);
 							classNames.forEach((className: string) => {
