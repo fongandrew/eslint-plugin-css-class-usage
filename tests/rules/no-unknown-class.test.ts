@@ -1,4 +1,4 @@
-import { TSESLint } from '@typescript-eslint/utils';
+import { RuleTester } from '@typescript-eslint/rule-tester';
 import rule from '../../src/rules/no-unknown-class';
 import '../../src/utils/file-watcher';
 
@@ -12,13 +12,12 @@ jest.mock('../../src/utils/file-watcher', () => ({
 	})),
 }));
 
-const ruleTester = new TSESLint.RuleTester({
-	parser: require.resolve('@typescript-eslint/parser'),
-	parserOptions: {
-		ecmaVersion: 2020,
-		sourceType: 'module',
-		ecmaFeatures: {
-			jsx: true,
+const ruleTester = new RuleTester({
+	languageOptions: {
+		parserOptions: {
+			ecmaFeatures: {
+				jsx: true,
+			},
 		},
 	},
 });

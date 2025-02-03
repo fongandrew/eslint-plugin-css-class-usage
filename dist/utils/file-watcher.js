@@ -18,14 +18,14 @@ class CssWatcher {
         this.patterns = patterns;
         // Ignore hidden files by default
         this.ignorePatterns = ['**/.*', ...ignore];
-        this.setupWatcher();
-    }
-    setupWatcher() {
-        // Set up chokidar with appropriate options
         const cwd = process.cwd();
+        this.setupWatcher(cwd);
+        this.initialScan(cwd);
+    }
+    setupWatcher(cwd) {
         this.watcher = chokidar_1.default.watch(cwd, {
             persistent: true,
-            ignoreInitial: false, // This ensures we get the initial scan
+            ignoreInitial: true, // We need to do our initial scan synchronously
             ignored: (path, stats) => {
                 return (micromatch_1.default.isMatch(path, this.ignorePatterns) ||
                     !!((stats === null || stats === void 0 ? void 0 : stats.isFile()) && !micromatch_1.default.isMatch(path, this.patterns)));
@@ -39,7 +39,6 @@ class CssWatcher {
         // Setup event handlers
         this.watcher
             .on('add', (filePath) => {
-            console.log('!!', filePath);
             this.updateClassesForFile(filePath);
         })
             .on('change', (filePath) => {
@@ -53,9 +52,9 @@ class CssWatcher {
             console.error(`Watcher error: ${error}`);
         });
     }
-    async updateClassesForFile(filePath) {
+    updateClassesForFile(filePath) {
         try {
-            const content = await fs_1.default.promises.readFile(filePath, 'utf8');
+            const content = fs_1.default.readFileSync(filePath, 'utf8');
             const fileClasses = (0, css_extractor_1.extractClassesFromCss)(content);
             this.state.fileClasses.set(filePath, new Set(fileClasses));
             this.state.lastUpdate = Date.now();
@@ -63,6 +62,25 @@ class CssWatcher {
         catch (error) {
             console.error(`Error reading CSS file ${filePath}:`, error);
             this.state.fileClasses.delete(filePath);
+        }
+    }
+    initialScan(cwd) {
+        const dirs = [cwd];
+        for (const dir of dirs) {
+            const entries = fs_1.default.readdirSync(dir);
+            for (const entry of entries) {
+                const fullPath = `${dir}/${entry}`;
+                if (micromatch_1.default.isMatch(fullPath, this.ignorePatterns)) {
+                    continue;
+                }
+                const stats = fs_1.default.statSync(fullPath);
+                if (stats.isDirectory()) {
+                    dirs.push(fullPath);
+                }
+                else if (stats.isFile() && micromatch_1.default.isMatch(fullPath, this.patterns)) {
+                    this.updateClassesForFile(fullPath);
+                }
+            }
         }
     }
     hasClass(className) {

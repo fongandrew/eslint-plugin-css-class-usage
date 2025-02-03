@@ -85,7 +85,7 @@ export class CssWatcher {
 				const stats = fs.statSync(fullPath);
 				if (stats.isDirectory()) {
 					dirs.push(fullPath);
-				} else if (stats.isFile() && !micromatch.isMatch(fullPath, this.ignorePatterns)) {
+				} else if (stats.isFile() && micromatch.isMatch(fullPath, this.patterns)) {
 					this.updateClassesForFile(fullPath);
 				}
 			}

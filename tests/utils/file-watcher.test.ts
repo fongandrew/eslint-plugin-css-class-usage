@@ -1,13 +1,14 @@
 import { CssWatcher } from '../../src/utils/file-watcher';
 import chokidar from 'chokidar';
 import fs from 'fs';
+import path from 'path';
 
 // Mock chokidar and fs modules
 jest.mock('chokidar');
 jest.mock('fs', () => ({
-	promises: {
-		readFile: jest.fn(),
-	},
+	readFileSync: jest.fn(),
+	readdirSync: jest.fn(),
+	statSync: jest.fn(),
 }));
 
 describe('CssWatcher', () => {
@@ -20,6 +21,13 @@ describe('CssWatcher', () => {
 	beforeEach(() => {
 		// Clear all mocks before each test
 		jest.clearAllMocks();
+
+		// Mock fs.readdirSync to return empty array by default
+		(fs.readdirSync as jest.Mock).mockReturnValue([]);
+		(fs.statSync as jest.Mock).mockImplementation((fn: string) => ({
+			isDirectory: () => path.extname(fn) === '',
+			isFile: () => path.extname(fn) !== '',
+		}));
 
 		// Setup mock chokidar watcher
 		mockChokidarWatcher = {
@@ -36,20 +44,44 @@ describe('CssWatcher', () => {
 		}
 	});
 
-	it('initializes with default patterns', () => {
+	it('calls watch on current directory', () => {
 		watcher = new CssWatcher();
-		expect(chokidar.watch).toHaveBeenCalledWith(['**/*.css'], expect.any(Object));
+		expect(chokidar.watch).toHaveBeenCalledWith(process.cwd(), expect.any(Object));
 	});
 
-	it('initializes with custom patterns', () => {
-		const patterns = ['src/**/*.css', 'styles/**/*.css'];
-		watcher = new CssWatcher(patterns);
-		expect(chokidar.watch).toHaveBeenCalledWith(patterns, expect.any(Object));
+	it('performs initial scan, respecting glob patterns', () => {
+		(fs.readdirSync as jest.Mock).mockImplementation((path: string) => {
+			if (path === process.cwd()) {
+				return ['src', 'node_modules'];
+			} else if (path.endsWith('/src')) {
+				return ['components', 'styles', 'index.css', 'index.js'];
+			} else if (path.endsWith('/src/components')) {
+				return ['button.css', 'button.tsx'];
+			} else if (path.endsWith('/src/styles')) {
+				return ['utilities.css'];
+			}
+			throw new Error(`Unexpected directory read: ${path}`);
+		});
+		(fs.readFileSync as jest.Mock).mockImplementation((path: string) => {
+			if (path.endsWith('src/index.css')) {
+				return '.main { color: red; }';
+			} else if (path.endsWith('src/components/button.css')) {
+				return '.btn { color: blue; }';
+			} else if (path.endsWith('styles/utilities.css')) {
+				return '.hidden { display: none; }';
+			}
+			throw new Error(`Unexpected file read: ${path}`);
+		});
+
+		watcher = new CssWatcher();
+		expect(watcher.hasClass('main')).toBe(true);
+		expect(watcher.hasClass('btn')).toBe(true);
+		expect(watcher.hasClass('hidden')).toBe(true);
 	});
 
 	it('handles file add/change events', async () => {
 		const mockContent = '.test-class { color: red; }';
-		(fs.promises.readFile as jest.Mock).mockResolvedValue(mockContent);
+		(fs.readFileSync as jest.Mock).mockReturnValue(mockContent);
 
 		watcher = new CssWatcher();
 
@@ -65,7 +97,7 @@ describe('CssWatcher', () => {
 
 	it('handles file unlink events', async () => {
 		const mockContent = '.test-class { color: red; }';
-		(fs.promises.readFile as jest.Mock).mockResolvedValue(mockContent);
+		(fs.readFileSync as jest.Mock).mockReturnValue(mockContent);
 
 		watcher = new CssWatcher();
 

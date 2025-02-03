@@ -6,6 +6,7 @@ export declare class CssWatcher {
     constructor(patterns?: string[], ignore?: string[]);
     private setupWatcher;
     private updateClassesForFile;
+    private initialScan;
     hasClass(className: string): boolean;
     close(): Promise<void>;
 }

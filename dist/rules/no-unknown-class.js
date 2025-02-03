@@ -16,7 +16,6 @@ const rule = {
         type: 'problem',
         docs: {
             description: 'Ensure that CSS classes used in JS/TS files exist',
-            recommended: 'recommended',
         },
         messages: {
             unknownClass: "Unknown CSS class '{{className}}'",

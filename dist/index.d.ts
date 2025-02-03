@@ -11,7 +11,7 @@ declare const _default: {
          * Rule to validate that CSS classes used in code exist in stylesheets
          * @see ./rules/no-unknown-class.ts
          */
-        'no-unknown-classes': import("@typescript-eslint/utils/ts-eslint").RuleModule<"unknownClass", [import("./rules/no-unknown-class").PluginOptions], import("@typescript-eslint/utils/ts-eslint").RuleListener>;
+        'no-unknown-classes': import("@typescript-eslint/utils/ts-eslint").RuleModule<"unknownClass", [import("./rules/no-unknown-class").PluginOptions], unknown, import("@typescript-eslint/utils/ts-eslint").RuleListener>;
     };
     /**
      * Recommended configuration
