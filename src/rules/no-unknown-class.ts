@@ -47,7 +47,7 @@ const rule: Rule.RuleModule = {
 			cssWatcher = new CssWatcher(options.cssFiles);
 		}
 
-		// Helper to check if a class exists in our CSS files
+		/** Helper to check if a class exists in our CSS files */
 		const validate = (className: string, node: JSXTree.Node) => {
 			// Ignore Tailwind classes with arbitrary values
 			if (className.includes('[')) {
@@ -63,20 +63,41 @@ const rule: Rule.RuleModule = {
 			}
 		};
 
+		/** Helper to validate class names in object expressions */
+		const validateObjectExpression = (objExpr: JSXTree.ObjectExpression) => {
+			objExpr.properties.forEach((prop) => {
+				if (prop.type === 'Property') {
+					if (prop.key.type === 'Literal' && typeof prop.key.value === 'string') {
+						validate(prop.key.value, prop);
+					} else if (prop.key.type === 'Identifier') {
+						validate(prop.key.name, prop);
+					}
+				}
+			});
+		};
+
 		return {
 			// Check JSX className attributes
 			JSXAttribute(node: JSXTree.Node) {
 				const jsxNode = node as JSXTree.JSXAttribute;
 				if (
 					jsxNode.name.type === 'JSXIdentifier' &&
-					options.classAttributes?.includes(jsxNode.name.name) &&
-					jsxNode.value?.type === 'Literal' &&
-					typeof jsxNode.value.value === 'string'
+					options.classAttributes?.includes(jsxNode.name.name)
 				) {
-					const classNames = jsxNode.value.value.split(/\s+/);
-					classNames.forEach((className: string) => {
-						validate(className, jsxNode);
-					});
+					if (
+						jsxNode.value?.type === 'Literal' &&
+						typeof jsxNode.value.value === 'string'
+					) {
+						const classNames = jsxNode.value.value.split(/\s+/);
+						classNames.forEach((className: string) => {
+							validate(className, jsxNode);
+						});
+					} else if (jsxNode.value?.type === 'JSXExpressionContainer') {
+						const expr = jsxNode.value.expression;
+						if (expr.type === 'ObjectExpression') {
+							validateObjectExpression(expr);
+						}
+					}
 				}
 			},
 
@@ -93,6 +114,8 @@ const rule: Rule.RuleModule = {
 							classNames.forEach((className: string) => {
 								validate(className, arg);
 							});
+						} else if (arg.type === 'ObjectExpression') {
+							validateObjectExpression(arg);
 						}
 					});
 				}
