@@ -15,15 +15,17 @@ export interface PluginOptions {
 
 let cssWatcher: CssWatcher | null = null;
 
+const DEFAULT_OPTIONS: PluginOptions = {
+	classAttributes: ['className', 'class', 'classList'],
+	classFunctions: ['clsx', 'classNames', 'cx'],
+	cssFiles: ['**/*.css'],
+	ignore: ['**/node_modules/**', '**/dist/**', '**/out/**', '**/build/**'],
+};
+
 const rule: RuleModule<'unknownClass', [PluginOptions]> = {
-	defaultOptions: [
-		{
-			classAttributes: ['className', 'class', 'classList'],
-			classFunctions: ['clsx', 'classNames', 'cx'],
-			cssFiles: ['**/*.css'],
-			ignore: ['**/node_modules/**', '**/dist/**', '**/out/**', '**/build/**'],
-		},
-	],
+	// Not sure why we need to do this since it doesn't show up on context.options anyways,
+	// but TypeScript complains if it's missing in tests
+	defaultOptions: [DEFAULT_OPTIONS],
 	meta: {
 		type: 'problem',
 		docs: {
@@ -60,7 +62,10 @@ const rule: RuleModule<'unknownClass', [PluginOptions]> = {
 	},
 
 	create(context: Readonly<RuleContext<'unknownClass', [PluginOptions]>>) {
-		const options: PluginOptions = context.options[0];
+		const options: PluginOptions = {
+			...DEFAULT_OPTIONS,
+			...context.options[0],
+		};
 
 		// Initialize watcher if not already done
 		if (!cssWatcher) {

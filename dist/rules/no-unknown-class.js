@@ -2,15 +2,16 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const file_watcher_1 = require("../utils/file-watcher");
 let cssWatcher = null;
+const DEFAULT_OPTIONS = {
+    classAttributes: ['className', 'class', 'classList'],
+    classFunctions: ['clsx', 'classNames', 'cx'],
+    cssFiles: ['**/*.css'],
+    ignore: ['**/node_modules/**', '**/dist/**', '**/out/**', '**/build/**'],
+};
 const rule = {
-    defaultOptions: [
-        {
-            classAttributes: ['className', 'class', 'classList'],
-            classFunctions: ['clsx', 'classNames', 'cx'],
-            cssFiles: ['**/*.css'],
-            ignore: ['**/node_modules/**', '**/dist/**', '**/out/**', '**/build/**'],
-        },
-    ],
+    // Not sure why we need to do this since it doesn't show up on context.options anyways,
+    // but TypeScript complains if it's missing in tests
+    defaultOptions: [DEFAULT_OPTIONS],
     meta: {
         type: 'problem',
         docs: {
@@ -46,7 +47,10 @@ const rule = {
         ],
     },
     create(context) {
-        const options = context.options[0];
+        const options = {
+            ...DEFAULT_OPTIONS,
+            ...context.options[0],
+        };
         // Initialize watcher if not already done
         if (!cssWatcher) {
             cssWatcher = new file_watcher_1.CssWatcher(options.cssFiles, options.ignore);
