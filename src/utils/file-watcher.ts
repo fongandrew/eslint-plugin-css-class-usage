@@ -20,15 +20,16 @@ export class CssWatcher {
 		this.patterns = patterns;
 		// Ignore hidden files by default
 		this.ignorePatterns = ['**/.*', ...ignore];
-		this.setupWatcher();
+
+		const cwd = process.cwd();
+		this.setupWatcher(cwd);
+		this.initialScan(cwd);
 	}
 
-	private setupWatcher() {
-		// Set up chokidar with appropriate options
-		const cwd = process.cwd();
+	private setupWatcher(cwd: string) {
 		this.watcher = chokidar.watch(cwd, {
 			persistent: true,
-			ignoreInitial: false, // This ensures we get the initial scan
+			ignoreInitial: true, // We need to do our initial scan synchronously
 			ignored: (path, stats) => {
 				return (
 					micromatch.isMatch(path, this.ignorePatterns) ||
@@ -59,15 +60,35 @@ export class CssWatcher {
 			});
 	}
 
-	private async updateClassesForFile(filePath: string) {
+	private updateClassesForFile(filePath: string) {
 		try {
-			const content = await fs.promises.readFile(filePath, 'utf8');
+			const content = fs.readFileSync(filePath, 'utf8');
 			const fileClasses = extractClassesFromCss(content);
 			this.state.fileClasses.set(filePath, new Set(fileClasses));
 			this.state.lastUpdate = Date.now();
 		} catch (error) {
 			console.error(`Error reading CSS file ${filePath}:`, error);
 			this.state.fileClasses.delete(filePath);
+		}
+	}
+
+	private initialScan(cwd: string) {
+		const dirs = [cwd];
+		for (const dir of dirs) {
+			const entries = fs.readdirSync(dir);
+			for (const entry of entries) {
+				const fullPath = `${dir}/${entry}`;
+				if (micromatch.isMatch(fullPath, this.ignorePatterns)) {
+					continue;
+				}
+
+				const stats = fs.statSync(fullPath);
+				if (stats.isDirectory()) {
+					dirs.push(fullPath);
+				} else if (stats.isFile() && !micromatch.isMatch(fullPath, this.ignorePatterns)) {
+					this.updateClassesForFile(fullPath);
+				}
+			}
 		}
 	}
 
