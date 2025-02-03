@@ -23,7 +23,7 @@ export default [
       'css-class-usage': cssClassUsagePlugin
     },
     rules: {
-      'css-class-usage/no-unknwon-classes': 'error'
+      'css-class-usage/no-unknown-classes': 'error'
     }
   }
 ];
