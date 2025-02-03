@@ -1,6 +1,7 @@
 import fs from 'fs';
 import chokidar, { type FSWatcher } from 'chokidar';
 import { extractClassesFromCss } from './css-extractor';
+import micromatch from 'micromatch';
 
 export class CssWatcher {
 	private state = {
@@ -17,23 +18,23 @@ export class CssWatcher {
 		ignore: string[] = ['**/node_modules/**', '**/dist/**', '**/out/**', '**/build/**'],
 	) {
 		this.patterns = patterns;
-		this.ignorePatterns = ignore;
+		// Ignore hidden files by default
+		this.ignorePatterns = ['**/.*', ...ignore];
 		this.setupWatcher();
 	}
 
 	private setupWatcher() {
-		// Initial scan and watch setup
-		const watchPatterns = this.patterns.map((pattern) => {
-			// Convert Windows-style paths if necessary
-			return pattern.replace(/\\/g, '/');
-		});
-
 		// Set up chokidar with appropriate options
-		this.watcher = chokidar.watch(watchPatterns, {
+		const cwd = process.cwd();
+		this.watcher = chokidar.watch(cwd, {
 			persistent: true,
 			ignoreInitial: false, // This ensures we get the initial scan
-			ignored: [...this.ignorePatterns, /(^|[/\\])\../], // Ignore dotfiles and user-specified patterns
-			cwd: '.', // Use current working directory as base
+			ignored: (path, stats) => {
+				return (
+					micromatch.isMatch(path, this.ignorePatterns) ||
+					!!(stats?.isFile() && !micromatch.isMatch(path, this.patterns))
+				);
+			},
 			followSymlinks: true,
 			awaitWriteFinish: {
 				stabilityThreshold: 200,

@@ -7,6 +7,7 @@ exports.CssWatcher = void 0;
 const fs_1 = __importDefault(require("fs"));
 const chokidar_1 = __importDefault(require("chokidar"));
 const css_extractor_1 = require("./css-extractor");
+const micromatch_1 = __importDefault(require("micromatch"));
 class CssWatcher {
     constructor(patterns = ['**/*.css'], ignore = ['**/node_modules/**', '**/dist/**', '**/out/**', '**/build/**']) {
         this.state = {
@@ -15,21 +16,20 @@ class CssWatcher {
         };
         this.watcher = null;
         this.patterns = patterns;
-        this.ignorePatterns = ignore;
+        // Ignore hidden files by default
+        this.ignorePatterns = ['**/.*', ...ignore];
         this.setupWatcher();
     }
     setupWatcher() {
-        // Initial scan and watch setup
-        const watchPatterns = this.patterns.map((pattern) => {
-            // Convert Windows-style paths if necessary
-            return pattern.replace(/\\/g, '/');
-        });
         // Set up chokidar with appropriate options
-        this.watcher = chokidar_1.default.watch(watchPatterns, {
+        const cwd = process.cwd();
+        this.watcher = chokidar_1.default.watch(cwd, {
             persistent: true,
             ignoreInitial: false, // This ensures we get the initial scan
-            ignored: [...this.ignorePatterns, /(^|[/\\])\../], // Ignore dotfiles and user-specified patterns
-            cwd: '.', // Use current working directory as base
+            ignored: (path, stats) => {
+                return (micromatch_1.default.isMatch(path, this.ignorePatterns) ||
+                    !!((stats === null || stats === void 0 ? void 0 : stats.isFile()) && !micromatch_1.default.isMatch(path, this.patterns)));
+            },
             followSymlinks: true,
             awaitWriteFinish: {
                 stabilityThreshold: 200,
@@ -39,6 +39,7 @@ class CssWatcher {
         // Setup event handlers
         this.watcher
             .on('add', (filePath) => {
+            console.log('!!', filePath);
             this.updateClassesForFile(filePath);
         })
             .on('change', (filePath) => {
