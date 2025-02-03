@@ -14,7 +14,7 @@ export = {
 		 * Rule to validate that CSS classes used in code exist in stylesheets
 		 * @see ./rules/no-unknown-class.ts
 		 */
-		'no-unknown-class': noUnknownClass,
+		'no-unknown-classes': noUnknownClass,
 	},
 	/**
 	 * Recommended configuration
@@ -29,6 +29,7 @@ export = {
 						cssFiles: ['src/**/*.css', 'src/**/*.scss'],
 						classAttributes: ['className', 'class', 'classList'],
 						classFunctions: ['clsx', 'classNames', 'cx'],
+						ignore: ['**/node_modules/**', '**/dist/**', '**/out/**', '**/build/**'],
 					},
 				],
 			},

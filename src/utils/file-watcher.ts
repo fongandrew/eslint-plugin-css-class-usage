@@ -10,9 +10,14 @@ export class CssWatcher {
 
 	private watcher: FSWatcher | null = null;
 	private patterns: string[];
+	private ignorePatterns: string[];
 
-	constructor(patterns: string[] = ['**/*.css']) {
+	constructor(
+		patterns: string[] = ['**/*.css'],
+		ignore: string[] = ['**/node_modules/**', '**/dist/**', '**/out/**', '**/build/**'],
+	) {
 		this.patterns = patterns;
+		this.ignorePatterns = ignore;
 		this.setupWatcher();
 	}
 
@@ -27,7 +32,7 @@ export class CssWatcher {
 		this.watcher = chokidar.watch(watchPatterns, {
 			persistent: true,
 			ignoreInitial: false, // This ensures we get the initial scan
-			ignored: /(^|[/\\])\../, // Ignore dotfiles
+			ignored: [...this.ignorePatterns, /(^|[/\\])\../], // Ignore dotfiles and user-specified patterns
 			cwd: '.', // Use current working directory as base
 			followSymlinks: true,
 			awaitWriteFinish: {

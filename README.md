@@ -47,15 +47,22 @@ The plugin supports the following configuration options:
 ```javascript
 {
   'css-class-usage/no-unknown-classes': ['error', {
-    // Glob patterns for your CSS/SCSS files
-    cssFiles: ['src/**/*.css', 'src/**/*.scss'],
-    // Glob patterns for files to ignore
-    ignore: ['node_modules/**'],
-    // Enable watching CSS files for changes (default: true)
-    watch: true
+    // Attributes to check in JSX elements (default: ['className', 'class', 'classList'])
+    classAttributes: ['className', 'class', 'classList'],
+
+    // Function names that handle class composition (default: ['clsx', 'classNames', 'cx'])
+    classFunctions: ['clsx', 'classNames', 'cx'],
+
+    // Glob patterns for your CSS files (default: ['**/*.css'])
+    cssFiles: ['**/*.css'],
+
+    // Glob patterns for files to ignore (default: ['**/node_modules/**', '**/dist/**', '**/out/**', '**/build/**'])
+    ignore: ['**/node_modules/**', '**/dist/**', '**/out/**', '**/build/**']
   }]
 }
 ```
+
+All configuration options are optional and will use their default values if not specified.
 
 ## Rules
 
@@ -80,11 +87,12 @@ const element = <div className="header non-existent">Content</div>;
 ```
 
 The rule supports:
-- String literals
-- Multiple classes in a single string
-- class or className prop in JSX
-- classList prop in SolidJS
-- Various other common patterns for applying CSS classes
+- String literals in JSX attributes (e.g., `className="my-class"`)
+- Multiple classes in a single string (e.g., `className="header main-content"`)
+- Object syntax in JSX (e.g., `className={{ active: true }}`)
+- Class utility functions (e.g., `clsx('foo', { bar: true })`)
+- Tailwind modifiers (e.g., `hover:bg-blue-500`) - modifiers are automatically stripped when checking
+- Tailwind arbitrary values (e.g., `[mask-type:luminance]`) - these are automatically ignored
 
 ## Contributing
 

@@ -9,6 +9,8 @@ export interface PluginOptions {
 	classFunctions?: string[];
 	/** File patterns to watch for CSS classes */
 	cssFiles?: string[];
+	/** Patterns to ignore when searching for CSS files */
+	ignore?: string[];
 }
 
 let cssWatcher: CssWatcher | null = null;
@@ -19,6 +21,7 @@ const rule: RuleModule<'unknownClass', [PluginOptions]> = {
 			classAttributes: ['className', 'class', 'classList'],
 			classFunctions: ['clsx', 'classNames', 'cx'],
 			cssFiles: ['**/*.css'],
+			ignore: ['**/node_modules/**', '**/dist/**', '**/out/**', '**/build/**'],
 		},
 	],
 	meta: {
@@ -46,6 +49,10 @@ const rule: RuleModule<'unknownClass', [PluginOptions]> = {
 						type: 'array',
 						items: { type: 'string' },
 					},
+					ignore: {
+						type: 'array',
+						items: { type: 'string' },
+					},
 				},
 				additionalProperties: false,
 			},
@@ -57,7 +64,7 @@ const rule: RuleModule<'unknownClass', [PluginOptions]> = {
 
 		// Initialize watcher if not already done
 		if (!cssWatcher) {
-			cssWatcher = new CssWatcher(options.cssFiles);
+			cssWatcher = new CssWatcher(options.cssFiles, options.ignore);
 		}
 
 		/** Helper to check if a class exists in our CSS files */
