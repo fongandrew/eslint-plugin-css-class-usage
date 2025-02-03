@@ -1,13 +1,26 @@
 import { type RuleModule, type RuleContext } from '@typescript-eslint/utils/ts-eslint';
 import { type TSESTree } from '@typescript-eslint/types';
-import { type PluginOptions } from '../types';
 import { CssWatcher } from '../utils/file-watcher';
-import { DEFAULT_OPTIONS } from '../defaults';
+
+export interface PluginOptions {
+	/** Attributes to check in JSX elements (e.g., 'className', 'class') */
+	classAttributes?: string[];
+	/** Function names that handle class composition (e.g., 'clsx', 'classNames') */
+	classFunctions?: string[];
+	/** File patterns to watch for CSS classes */
+	cssFiles?: string[];
+}
 
 let cssWatcher: CssWatcher | null = null;
 
-const rule: RuleModule<'unknownClass', [typeof DEFAULT_OPTIONS]> = {
-	defaultOptions: [DEFAULT_OPTIONS],
+const rule: RuleModule<'unknownClass', [PluginOptions]> = {
+	defaultOptions: [
+		{
+			classAttributes: ['className', 'class', 'classList'],
+			classFunctions: ['clsx', 'classNames', 'cx'],
+			cssFiles: ['**/*.css'],
+		},
+	],
 	meta: {
 		type: 'problem',
 		docs: {
@@ -39,11 +52,8 @@ const rule: RuleModule<'unknownClass', [typeof DEFAULT_OPTIONS]> = {
 		],
 	},
 
-	create(context: Readonly<RuleContext<'unknownClass', [typeof DEFAULT_OPTIONS]>>) {
-		const options: PluginOptions = {
-			...DEFAULT_OPTIONS,
-			...(context.options[0] || {}),
-		};
+	create(context: Readonly<RuleContext<'unknownClass', [PluginOptions]>>) {
+		const options: PluginOptions = context.options[0];
 
 		// Initialize watcher if not already done
 		if (!cssWatcher) {
