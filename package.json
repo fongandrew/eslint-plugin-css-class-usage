@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-css-class-usage",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "ESLint plugin to check that CSS classes used in JS/TS files exist",
   "main": "dist/index.js",
   "files": [
