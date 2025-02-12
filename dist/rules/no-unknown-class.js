@@ -79,6 +79,13 @@ const rule = {
                 });
             }
         };
+        /** Helper to validate string literal class names */
+        const validateStringLiteral = (value, node) => {
+            const classNames = value.split(/\s+/);
+            classNames.forEach((className) => {
+                validate(className, node);
+            });
+        };
         /** Helper to validate class names in object expressions */
         const validateObjectExpression = (objExpr) => {
             objExpr.properties.forEach((prop) => {
@@ -93,6 +100,28 @@ const rule = {
                 // We ignore SpreadElement as it can't contain class names directly
             });
         };
+        /** Helper to validate expressions that might contain class names */
+        const validateExpression = (expr) => {
+            switch (expr.type) {
+                case 'Literal':
+                    if (typeof expr.value === 'string') {
+                        validateStringLiteral(expr.value, expr);
+                    }
+                    break;
+                case 'ObjectExpression':
+                    validateObjectExpression(expr);
+                    break;
+                case 'ConditionalExpression':
+                    // Handle ternary expressions: condition ? 'class1' : 'class2'
+                    validateExpression(expr.consequent);
+                    validateExpression(expr.alternate);
+                    break;
+                case 'LogicalExpression':
+                    // Handle logical expressions: condition && 'class1'
+                    validateExpression(expr.right);
+                    break;
+            }
+        };
         return {
             // Check JSX className attributes
             JSXAttribute(node) {
@@ -100,10 +129,7 @@ const rule = {
                 if (node.name.type === 'JSXIdentifier' &&
                     ((_a = options.classAttributes) === null || _a === void 0 ? void 0 : _a.includes(node.name.name))) {
                     if (((_b = node.value) === null || _b === void 0 ? void 0 : _b.type) === 'Literal' && typeof node.value.value === 'string') {
-                        const classNames = node.value.value.split(/\s+/);
-                        classNames.forEach((className) => {
-                            validate(className, node);
-                        });
+                        validateStringLiteral(node.value.value, node);
                     }
                     else if (((_c = node.value) === null || _c === void 0 ? void 0 : _c.type) === 'JSXExpressionContainer') {
                         const expr = node.value.expression;
@@ -119,15 +145,7 @@ const rule = {
                 if (node.callee.type === 'Identifier' &&
                     ((_a = options.classFunctions) === null || _a === void 0 ? void 0 : _a.includes(node.callee.name))) {
                     node.arguments.forEach((arg) => {
-                        if (arg.type === 'Literal' && typeof arg.value === 'string') {
-                            const classNames = arg.value.split(/\s+/);
-                            classNames.forEach((className) => {
-                                validate(className, arg);
-                            });
-                        }
-                        else if (arg.type === 'ObjectExpression') {
-                            validateObjectExpression(arg);
-                        }
+                        validateExpression(arg);
                     });
                 }
             },
