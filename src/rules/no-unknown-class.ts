@@ -101,6 +101,14 @@ const rule: RuleModule<'unknownClass', [PluginOptions]> = {
 			}
 		};
 
+		/** Helper to validate string literal class names */
+		const validateStringLiteral = (value: string, node: TSESTree.Node) => {
+			const classNames = value.split(/\s+/);
+			classNames.forEach((className: string) => {
+				validate(className, node);
+			});
+		};
+
 		/** Helper to validate class names in object expressions */
 		const validateObjectExpression = (objExpr: TSESTree.ObjectExpression) => {
 			objExpr.properties.forEach((prop: TSESTree.Property | TSESTree.SpreadElement) => {
@@ -115,6 +123,29 @@ const rule: RuleModule<'unknownClass', [PluginOptions]> = {
 			});
 		};
 
+		/** Helper to validate expressions that might contain class names */
+		const validateExpression = (expr: TSESTree.Expression) => {
+			switch (expr.type) {
+				case 'Literal':
+					if (typeof expr.value === 'string') {
+						validateStringLiteral(expr.value, expr);
+					}
+					break;
+				case 'ObjectExpression':
+					validateObjectExpression(expr);
+					break;
+				case 'ConditionalExpression':
+					// Handle ternary expressions: condition ? 'class1' : 'class2'
+					validateExpression(expr.consequent);
+					validateExpression(expr.alternate);
+					break;
+				case 'LogicalExpression':
+					// Handle logical expressions: condition && 'class1'
+					validateExpression(expr.right);
+					break;
+			}
+		};
+
 		return {
 			// Check JSX className attributes
 			JSXAttribute(node: TSESTree.JSXAttribute) {
@@ -123,10 +154,7 @@ const rule: RuleModule<'unknownClass', [PluginOptions]> = {
 					options.classAttributes?.includes(node.name.name)
 				) {
 					if (node.value?.type === 'Literal' && typeof node.value.value === 'string') {
-						const classNames = node.value.value.split(/\s+/);
-						classNames.forEach((className: string) => {
-							validate(className, node);
-						});
+						validateStringLiteral(node.value.value, node);
 					} else if (node.value?.type === 'JSXExpressionContainer') {
 						const expr = node.value.expression;
 						if (expr.type === 'ObjectExpression') {
@@ -143,14 +171,7 @@ const rule: RuleModule<'unknownClass', [PluginOptions]> = {
 					options.classFunctions?.includes(node.callee.name)
 				) {
 					node.arguments.forEach((arg: TSESTree.Node) => {
-						if (arg.type === 'Literal' && typeof arg.value === 'string') {
-							const classNames = arg.value.split(/\s+/);
-							classNames.forEach((className: string) => {
-								validate(className, arg);
-							});
-						} else if (arg.type === 'ObjectExpression') {
-							validateObjectExpression(arg);
-						}
+						validateExpression(arg as TSESTree.Expression);
 					});
 				}
 			},

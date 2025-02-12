@@ -34,6 +34,11 @@ ruleTester.run('no-unknown-class', rule, {
 			code: 'clsx("container flex", "p-4")',
 			options: [{ classFunctions: ['clsx'] }],
 		},
+		// Test class utility function with valid classes in conditions
+		{
+			code: 'clsx("container", condition() ? "flex" : "p-4", otherCondition() && "btn")',
+			options: [{ classFunctions: ['clsx'] }],
+		},
 		// Test object expression with valid classes
 		{
 			code: 'clsx({ flex: true, "p-4": condition })',
@@ -70,6 +75,48 @@ ruleTester.run('no-unknown-class', rule, {
 		// Test class utility function with invalid class
 		{
 			code: 'clsx("unknown-class")',
+			options: [{ classFunctions: ['clsx'] }],
+			errors: [{ messageId: 'unknownClass', data: { className: 'unknown-class' } }],
+		},
+		// Test class utility function with invalid classes in ternary if
+		{
+			code: 'clsx("container", condition() ? "flex" : "unknown-class")',
+			options: [{ classFunctions: ['clsx'] }],
+			errors: [{ messageId: 'unknownClass', data: { className: 'unknown-class' } }],
+		},
+		// Test class utility function with invalid classes in ternary then
+		{
+			code: 'clsx("container", condition() ? "unknown-class" : "flex")',
+			options: [{ classFunctions: ['clsx'] }],
+			errors: [{ messageId: 'unknownClass', data: { className: 'unknown-class' } }],
+		},
+		// Test class utility function with invalid classes in conditional && form
+		{
+			code: 'clsx("container", condition() && "unknown-class")',
+			options: [{ classFunctions: ['clsx'] }],
+			errors: [{ messageId: 'unknownClass', data: { className: 'unknown-class' } }],
+		},
+		// Test class utility function with invalid classes in multiple coniditonal && form
+		{
+			code: 'clsx("container", condition() && otherCondition() && "unknown-class")',
+			options: [{ classFunctions: ['clsx'] }],
+			errors: [{ messageId: 'unknownClass', data: { className: 'unknown-class' } }],
+		},
+		// Test class utility function with invalid classes in conditional || form
+		{
+			code: 'clsx("container", condition() || "unknown-class")',
+			options: [{ classFunctions: ['clsx'] }],
+			errors: [{ messageId: 'unknownClass', data: { className: 'unknown-class' } }],
+		},
+		// Test class utility function with invalid classes in multiple coniditonal || form
+		{
+			code: 'clsx("container", condition() || otherCondition() || "unknown-class")',
+			options: [{ classFunctions: ['clsx'] }],
+			errors: [{ messageId: 'unknownClass', data: { className: 'unknown-class' } }],
+		},
+		// Test class utility function with invalid classes in nested ternary + conditional
+		{
+			code: 'clsx("container", condition() || (otherCondition() ? "unknown-class" : "flex"))',
 			options: [{ classFunctions: ['clsx'] }],
 			errors: [{ messageId: 'unknownClass', data: { className: 'unknown-class' } }],
 		},
