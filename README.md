@@ -4,10 +4,8 @@ This is an ESLint plugin to check that CSS classes used in JS/TS files exist in 
 
 ## Installation
 
-This isn't published on NPM yet, so you'll have to install directly from the repo:
-
 ```
-npm install https://github.com/fongandrew/eslint-plugin-css-class-usage.git
+npm install eslint-plugin-css-class-usage
 ```
 
 ## Usage
