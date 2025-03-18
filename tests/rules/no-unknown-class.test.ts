@@ -29,6 +29,11 @@ ruleTester.run('no-unknown-class', rule, {
 			code: '<div className="btn primary"></div>',
 			options: [{ classAttributes: ['className'] }],
 		},
+		// Test JSX className with valid classes and extraneous whitespace
+		{
+			code: '<div className=" btn  primary  "></div>',
+			options: [{ classAttributes: ['className'] }],
+		},
 		// Test class utility function with valid classes
 		{
 			code: 'clsx("container flex", "p-4")',

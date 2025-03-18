@@ -103,7 +103,7 @@ const rule: RuleModule<'unknownClass', [PluginOptions]> = {
 
 		/** Helper to validate string literal class names */
 		const validateStringLiteral = (value: string, node: TSESTree.Node) => {
-			const classNames = value.split(/\s+/);
+			const classNames = value.trim().split(/\s+/);
 			classNames.forEach((className: string) => {
 				validate(className, node);
 			});
