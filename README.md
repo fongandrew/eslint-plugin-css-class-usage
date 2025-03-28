@@ -1,8 +1,13 @@
 # eslint-plugin-css-class-usage
 
+<a href="https://www.npmjs.com/package/eslint-plugin-css-class-usage"><img src="https://img.shields.io/npm/v/eslint-plugin-css-class-usage" alt="NPM badge" />
+</a>
+
 This is an ESLint plugin to check that CSS classes used in JS/TS files exist in your stylesheets. It's loosely inspired by the `no-custom-classname` rule from https://github.com/francoismassart/eslint-plugin-tailwindcss, but minus the Tailwind aspects.
 
 ## Installation
+
+Install the [NPM package](https://www.npmjs.com/package/eslint-plugin-css-class-usage):
 
 ```
 npm install eslint-plugin-css-class-usage
