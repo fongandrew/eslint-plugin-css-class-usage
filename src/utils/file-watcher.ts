@@ -36,8 +36,8 @@ export class CssWatcher {
 			ignoreInitial: true, // We need to do our initial scan synchronously
 			ignored: (path, stats) => {
 				return (
-					micromatch.isMatch(path, this.ignorePatterns) ||
-					!!(stats?.isFile() && !micromatch.isMatch(path, this.patterns))
+					micromatch.isMatch(path, this.ignorePatterns, { dot: true }) ||
+					!!(stats?.isFile() && !micromatch.isMatch(path, this.patterns, { dot: true }))
 				);
 			},
 			followSymlinks: true,
@@ -82,14 +82,17 @@ export class CssWatcher {
 			const entries = fs.readdirSync(dir);
 			for (const entry of entries) {
 				const fullPath = `${dir}/${entry}`;
-				if (micromatch.isMatch(fullPath, this.ignorePatterns)) {
+				if (micromatch.isMatch(fullPath, this.ignorePatterns, { dot: true })) {
 					continue;
 				}
 
 				const stats = fs.statSync(fullPath);
 				if (stats.isDirectory()) {
 					dirs.push(fullPath);
-				} else if (stats.isFile() && micromatch.isMatch(fullPath, this.patterns)) {
+				} else if (
+					stats.isFile() &&
+					micromatch.isMatch(fullPath, this.patterns, { dot: true })
+				) {
 					this.updateClassesForFile(fullPath);
 				}
 			}
